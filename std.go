@@ -250,7 +250,7 @@ func (s *Std) SelectExists(ctx context.Context, query string, args []interface{}
 // `tx` to execute the statement.
 func (s *Std) SelectExistsTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}) (exists bool, err error) {
 	if len(dest) == 0 {
-		return false, errors.New("sqle: no dest to scan to")
+		return false, errors.New("sqlee: no dest to scan to")
 	}
 
 	var stmt *sql.Stmt
@@ -321,7 +321,7 @@ func (s *Std) SelectRange(ctx context.Context, query string, args []interface{},
 // `tx` to execute the statement.
 func (s *Std) SelectRangeTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}, handleRow func()) (err error) {
 	if len(dest) == 0 {
-		return fmt.Errorf("sqle: no dest to scan to")
+		return fmt.Errorf("sqlee: no dest to scan to")
 	}
 
 	var stmt *sql.Stmt
