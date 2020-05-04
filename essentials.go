@@ -9,6 +9,8 @@ import (
 // only functions that can be executed using database/sql.DB from the standard
 // library.
 type Essentials interface {
+	Tx(ctx context.Context, handle func(tx *sql.Tx) error) error
+
 	Exec(ctx context.Context, query string, args ...interface{}) error
 	ExecTx(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) error
 	ExecID(ctx context.Context, query string, args ...interface{}) (lastInsertID int64, err error)
