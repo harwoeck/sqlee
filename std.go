@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
 )
 
 // Std implements the `Essentials` interface with only using the standard
@@ -233,11 +235,33 @@ func (s *Std) Select(ctx context.Context, query string, args []interface{}, dest
 	return err
 }
 
+// SelectSq is the same as `Select` but uses the passed squirrel.SelectBuilder
+// to receive `query` and `args` parameters.
+func (s *Std) SelectSq(ctx context.Context, sb sq.SelectBuilder, dest []interface{}) error {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	return s.Select(ctx, query, args, dest)
+}
+
 // SelectTx is the same as `Select` but uses the passed transaction `tx` to
 // execute the statement.
 func (s *Std) SelectTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}) error {
 	_, err := s.SelectExistsTx(ctx, tx, query, args, dest)
 	return err
+}
+
+// SelectSqTx is the same as `SelectTx` but uses the passed
+// squirrel.SelectBuilder to receive `query` and `args` parameters.
+func (s *Std) SelectSqTx(ctx context.Context, tx *sql.Tx, sb sq.SelectBuilder, dest []interface{}) error {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	return s.SelectTx(ctx, tx, query, args, dest)
 }
 
 // SelectExists is the same as `Select`, but additionally returns an boolean
@@ -256,6 +280,17 @@ func (s *Std) SelectExists(ctx context.Context, query string, args []interface{}
 	}
 
 	return
+}
+
+// SelectExistsSq is the same as `SelectExists` but uses the passed
+// squirrel.SelectBuilder to receive `query` and `args` parameters.
+func (s *Std) SelectExistsSq(ctx context.Context, sb sq.SelectBuilder, dest []interface{}) (exists bool, err error) {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	return s.SelectExists(ctx, query, args, dest)
 }
 
 // SelectExistsTx is the same as `SelectExists` but uses the passed transaction
@@ -294,6 +329,17 @@ func (s *Std) SelectExistsTx(ctx context.Context, tx *sql.Tx, query string, args
 	return true, nil
 }
 
+// SelectExistsSqTx is the same as `SelectExistsTx` but uses the passed
+// squirrel.SelectBuilder to receive `query` and `args` parameters.
+func (s *Std) SelectExistsSqTx(ctx context.Context, tx *sql.Tx, sb sq.SelectBuilder, dest []interface{}) (exists bool, err error) {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	return s.SelectExistsTx(ctx, tx, query, args, dest)
+}
+
 // SelectRange selects a range of results from the database, defined by the
 // `query` and it's arguments. The `args` interface slice should contain all
 // primitive value arguments. The `dest` interface slice should contain a
@@ -309,6 +355,17 @@ func (s *Std) SelectRange(ctx context.Context, query string, args []interface{},
 	return s.Tx(ctx, func(tx *sql.Tx) error {
 		return s.SelectRangeTx(ctx, tx, query, args, dest, handleRow)
 	})
+}
+
+// SelectRangeSq is the same as `SelectRange` but uses the passed
+// squirrel.SelectBuilder to receive `query` and `args` parameters.
+func (s *Std) SelectRangeSq(ctx context.Context, sb sq.SelectBuilder, dest []interface{}, handleRow func()) error {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	return s.SelectRange(ctx, query, args, dest, handleRow)
 }
 
 // SelectRangeTx is the same as `SelectRange` but uses the passed transaction
@@ -348,4 +405,15 @@ func (s *Std) SelectRangeTx(ctx context.Context, tx *sql.Tx, query string, args 
 	}
 
 	return nil
+}
+
+// SelectRangeSqTx is the same as `SelectRangeTx` but uses the passed
+// squirrel.SelectBuilder to receive `query` and `args` parameters.
+func (s *Std) SelectRangeSqTx(ctx context.Context, tx *sql.Tx, sb sq.SelectBuilder, dest []interface{}, handleRow func()) error {
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	return s.SelectRangeTx(ctx, tx, query, args, dest, handleRow)
 }
