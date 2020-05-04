@@ -18,12 +18,12 @@ type Essentials interface {
 	ExecRes(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 	ExecResTx(ctx context.Context, tx *sql.Tx, query string, args ...interface{}) (sql.Result, error)
 
-	Select(ctx context.Context, query string, args []interface{}, dests []interface{}) error
-	SelectTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dests []interface{}) error
-	SelectExists(ctx context.Context, query string, args []interface{}, dests []interface{}) (exists bool, err error)
-	SelectExistsTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dests []interface{}) (exists bool, err error)
-	SelectRange(ctx context.Context, query string, args []interface{}, dests []interface{}, handleRow func()) error
-	SelectRangeTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dests []interface{}, handleRow func()) error
+	Select(ctx context.Context, query string, args []interface{}, dest []interface{}) error
+	SelectTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}) error
+	SelectExists(ctx context.Context, query string, args []interface{}, dest []interface{}) (exists bool, err error)
+	SelectExistsTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}) (exists bool, err error)
+	SelectRange(ctx context.Context, query string, args []interface{}, dest []interface{}, handleRow func()) error
+	SelectRangeTx(ctx context.Context, tx *sql.Tx, query string, args []interface{}, dest []interface{}, handleRow func()) error
 
 	UnsafeExecBatch(ctx context.Context, statements []string) error
 	UnsafeExecBatchTx(ctx context.Context, tx *sql.Tx, statements []string) error
