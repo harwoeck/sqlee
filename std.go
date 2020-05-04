@@ -28,6 +28,32 @@ func NewStd(db *sql.DB) *Std {
 	}
 }
 
+// Tx manages an complete transaction lifecycle with Begin, Commit, Rollback
+// and returns any occurring errors.
+func (s *Std) Tx(ctx context.Context, handle func(tx *sql.Tx) error) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	err = handle(tx)
+	if err != nil {
+		rlbErr := tx.Rollback()
+		if rlbErr != nil {
+			return fmt.Errorf("sqlee: multiple errors occurred: %q followed by tx.Rollback error: %q", err.Error(), rlbErr.Error())
+		}
+
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Exec will execute the query with it's argument against the database and
 // returns any occurring errors.
 func (s *Std) Exec(ctx context.Context, query string, args ...interface{}) error {
@@ -125,22 +151,16 @@ func (s *Std) ExecAffectedTx(ctx context.Context, tx *sql.Tx, query string, args
 // ExecRes executes the query with it's arguments against the database and
 // returns any occurring errors.
 func (s *Std) ExecRes(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
+	var res sql.Result
+	var err error
 
-	res, err := s.ExecResTx(ctx, tx, query, args...)
-	if err != nil {
-		rlbErr := tx.Rollback()
-		if rlbErr != nil {
-			return nil, fmt.Errorf("sqle: multiple errors occurred: %q followed by tx.Rollback error: %q", err.Error(), rlbErr.Error())
+	err = s.Tx(ctx, func(tx *sql.Tx) error {
+		res, err = s.ExecResTx(ctx, tx, query, args...)
+		if err != nil {
+			return err
 		}
-
-		return nil, err
-	}
-
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -223,22 +243,14 @@ func (s *Std) SelectTx(ctx context.Context, tx *sql.Tx, query string, args []int
 // SelectExists is the same as `Select`, but additionally returns an boolean
 // value, whether or not the query returned a row.
 func (s *Std) SelectExists(ctx context.Context, query string, args []interface{}, dest []interface{}) (exists bool, err error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return false, err
-	}
-
-	exists, err = s.SelectExistsTx(ctx, tx, query, args, dest)
-	if err != nil {
-		rlbErr := tx.Rollback()
-		if rlbErr != nil {
-			return false, fmt.Errorf("sqle: multiple errors occurred: %q followed by tx.Rollback error: %q", err.Error(), rlbErr.Error())
+	err = s.Tx(ctx, func(tx *sql.Tx) error {
+		exists, err = s.SelectExistsTx(ctx, tx, query, args, dest)
+		if err != nil {
+			return err
 		}
 
-		return false, err
-	}
-
-	err = tx.Commit()
+		return nil
+	})
 	if err != nil {
 		return false, err
 	}
@@ -294,27 +306,9 @@ func (s *Std) SelectExistsTx(ctx context.Context, tx *sql.Tx, query string, args
 // function the values of `dest` will be overwritten with the next row's
 // values.
 func (s *Std) SelectRange(ctx context.Context, query string, args []interface{}, dest []interface{}, handleRow func()) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	err = s.SelectRangeTx(ctx, tx, query, args, dest, handleRow)
-	if err != nil {
-		rlbErr := tx.Rollback()
-		if rlbErr != nil {
-			return fmt.Errorf("sqle: multiple errors occurred: %q followed by tx.Rollback error: %q", err.Error(), rlbErr.Error())
-		}
-
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.Tx(ctx, func(tx *sql.Tx) error {
+		return s.SelectRangeTx(ctx, tx, query, args, dest, handleRow)
+	})
 }
 
 // SelectRangeTx is the same as `SelectRange` but uses the passed transaction
