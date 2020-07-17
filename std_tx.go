@@ -10,7 +10,13 @@ import (
 // Tx manages an complete transaction lifecycle with Begin, Commit, Rollback
 // and returns any occurring errors.
 func (s *Std) Tx(ctx context.Context, handle func(tx *sql.Tx) error) error {
-	tx, err := s.DB.BeginTx(ctx, nil)
+	return s.TxOpts(ctx, nil, handle)
+}
+
+// TxOpts manages an complete transaction including specific options with Begin,
+// Commit, Rollback and returns any occurring errors.
+func (s *Std) TxOpts(ctx context.Context, opts *sql.TxOptions, handle func(tx *sql.Tx) error) error {
+	tx, err := s.DB.BeginTx(ctx, opts)
 	if err != nil {
 		return err
 	}
